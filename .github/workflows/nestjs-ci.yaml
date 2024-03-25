@@ -1,0 +1,39 @@
+name: NestJS CI
+
+#지정해둔 이벤트 발생 시 워크플로우 실행, 여기서는
+#git push origin [main],그리고 main브랜치를 대상으로 하는 pr
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+#workflow에서 실행될 작업을 정의함
+jobs:
+  build:
+    #runs-on : 실행될 환경을 지정
+    runs-on: ubuntu-latest
+    #작업 실행 전략을 설정
+    strategy:
+      #여러 환경 또는 여러 버전에서 동시에 작업이 실행됐을 때,
+      #AllOrNothing의 여부를 결정함. flase로 설정되면, 다른 환경이나 버전에서 실패하더라도 작업을 계속해서 진행
+      fail-fast: false
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+      # GitHub 리포지토리의 코드를 체크아웃(checkout)하여 작업 공간(workspace)에 가져오는 데 사용되는 액션
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        # 워크플로우에 필요한 Node.js 버전을 설정합니다. matrix 전략을 사용하여 여러 버전의 Node.js를 테스트할 수 있습니다.
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          # 프로젝트의 종속성을 설치합니다. npm ci(package.lock.json)을 통해 종속성 설치
+      - name: Install dependencies
+        run: npm ci
+        #코드의 일관성을 유지하고 잠재적인 문제를 식별하기 위해 린트(lint)를 실행합니다.
+      - name: Run lint
+        run: npm run lint
+        #프로젝트의 테스트 케이스를 실행합니다.
+      - name: Run tests
+        run: npm test
